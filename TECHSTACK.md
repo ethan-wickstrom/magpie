@@ -5,6 +5,6 @@
 - Ruff             (linting and formatting)             -> See [`.references/ruff.md`](.references/ruff.md)
 - ty               (type checking)                      -> See [`.references/ty.md`](.references/ty.md)
 - DSPy             (LLM framework)                      -> See [`.references/dspy.md`](.references/dspy.md)
-- Pydantic         (dspy signatures & data parsing)
+- Pydantic         (dspy signatures & data parsing)     -> See [`.references/pydantic.md`](.references/pydantic.md)
 - FastAPI          (API framework)
 - SQLite           (database)
