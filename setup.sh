@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # ── magpie — first-time setup ───────────────────────────────────────
+# Idempotent: safe to run more than once.
 # Usage: ./setup.sh
 set -euo pipefail
 
@@ -42,15 +43,21 @@ else
     ok "Python $REQUIRED_PYTHON installed"
 fi
 
-# ── 2. Sync workspace ───────────────────────────────────────────────
+# Bun
+if ! command -v bun >/dev/null 2>&1; then
+    fail "bun is not installed. Install it: https://bun.sh/docs/installation"
+fi
+BUN_VERSION="$(bun --version)"
+ok "bun $BUN_VERSION"
 
-section "Workspace"
+# ── 2. Python workspace ──────────────────────────────────────────────
+
+section "Python workspace"
 
 info "Syncing all packages and dev dependencies…"
 uv sync --all-packages
 ok "Workspace synced"
 
-# Verify workspace packages are importable
 for pkg in core ai api; do
     if uv run python -c "import $pkg" 2>/dev/null; then
         ok "package '$pkg' importable"
@@ -59,7 +66,19 @@ for pkg in core ai api; do
     fi
 done
 
-# ── 3. Environment file ─────────────────────────────────────────────
+# ── 3. Frontend workspace ────────────────────────────────────────────
+
+section "Frontend workspace (web/)"
+
+if [ -d web ]; then
+    info "Installing frontend dependencies…"
+    (cd web && bun install)
+    ok "Frontend dependencies installed"
+else
+    warn "web/ directory not found — skipping frontend setup"
+fi
+
+# ── 4. Environment file ─────────────────────────────────────────────
 
 section "Environment"
 
@@ -75,7 +94,7 @@ else
     fi
 fi
 
-# ── 4. Verification ─────────────────────────────────────────────────
+# ── 5. Verification ─────────────────────────────────────────────────
 
 section "Verification"
 
@@ -121,6 +140,16 @@ else
     ISSUES=$((ISSUES + 1))
 fi
 
+# Frontend typecheck
+if [ -d web ]; then
+    if (cd web && bun run typecheck 2>/dev/null); then
+        ok "frontend typecheck passed"
+    else
+        warn "frontend typecheck reported issues (run: cd web && bun run typecheck)"
+        ISSUES=$((ISSUES + 1))
+    fi
+fi
+
 # ── Summary ──────────────────────────────────────────────────────────
 
 section "Done"
@@ -132,10 +161,17 @@ else
 fi
 
 printf "\n${BOLD}Common commands:${RESET}\n"
-printf "  %-30s %s\n" "uv run magpie"         "Run the CLI"
-printf "  %-30s %s\n" "uv run fastapi dev"    "Start the API dev server"
-printf "  %-30s %s\n" "uv run ruff check ."   "Lint"
-printf "  %-30s %s\n" "uv run ruff format ."  "Format"
-printf "  %-30s %s\n" "uv run ty check"       "Type check"
-printf "  %-30s %s\n" "uv run pytest"         "Run tests"
+printf "  ${BOLD}Python:${RESET}\n"
+printf "    %-30s %s\n" "uv run magpie"         "Run the CLI"
+printf "    %-30s %s\n" "uv run fastapi dev"    "Start the API dev server"
+printf "    %-30s %s\n" "uv run ruff check ."   "Lint"
+printf "    %-30s %s\n" "uv run ruff format ."  "Format"
+printf "    %-30s %s\n" "uv run ty check"       "Type check"
+printf "    %-30s %s\n" "uv run pytest"         "Run tests"
+printf "  ${BOLD}Frontend (from web/):${RESET}\n"
+printf "    %-30s %s\n" "bun run dev"           "Start the dev server"
+printf "    %-30s %s\n" "bun run build"         "Build for production"
+printf "    %-30s %s\n" "bun run typecheck"     "Type check"
+printf "    %-30s %s\n" "bun run lint"          "Lint"
+printf "    %-30s %s\n" "bun run format"        "Format"
 printf "\n"
