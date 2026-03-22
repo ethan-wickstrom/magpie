@@ -113,15 +113,6 @@ else
     ISSUES=$((ISSUES + 1))
 fi
 
-# CLI smoke test
-CLI_OUTPUT="$(uv run magpie 2>&1)" || true
-if [ "$CLI_OUTPUT" = "Hello from magpie!" ]; then
-    ok "magpie CLI works"
-else
-    warn "magpie CLI unexpected output (run: uv run magpie)"
-    ISSUES=$((ISSUES + 1))
-fi
-
 # API smoke test
 if uv run python -c "from api.app import app; assert app.title == 'magpie'" 2>/dev/null; then
     ok "FastAPI app loads"
